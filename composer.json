@@ -39,7 +39,11 @@
         "stan": "sh git-changed-stan.sh",
         "format": "sh git-changed-format.sh",
         "stan-all": "./vendor/bin/phpstan analyse --memory-limit 2G",
+        "install-hooks": [
+            "cp -r .githooks/. .git/hooks && chmod -R +x .git/hooks/"
+        ],
         "post-autoload-dump": [
+            "@install-hooks",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],

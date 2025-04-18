@@ -1,0 +1,43 @@
+#!/bin/bash
+files=$(git diff --cached --name-only --diff-filter=ACM -- '*.php')
+
+if [ -n "$files" ]; then
+    echo "Running rector"
+    ./vendor/bin/rector process $files
+
+    echo "Running php_codesniffer cbf..."
+    ./vendor/bin/phpcbf $files
+
+    echo "Running php_codesniffer checks..."
+    ./vendor/bin/phpcs $files
+
+    status=$?
+    if [ $status -ne 0 ]; then
+        echo "phpcs checks failed. Commit aborted."
+        exit $status
+    fi
+
+    echo "Running laravel/pint fixes"
+	./vendor/bin/pint  $files
+
+    git add $files
+
+    echo "Running PSR-4 checks"
+    ./vendor/bin/phpunit --filter testPsr4Check
+    status=$?
+    if [ $status -ne 0 ]; then
+        echo "PSR-4 checks failed. Commit aborted."
+        exit $status
+    fi
+
+    echo "Running phpstan checks..."
+
+    ./vendor/bin/phpstan analyse --memory-limit 1G -c phpstan.neon $files
+
+    status=$?
+
+    if [ $status -ne 0 ]; then
+        echo "phpstan analysis filed. Commit aborted."
+        exit $status
+    fi
+fi
